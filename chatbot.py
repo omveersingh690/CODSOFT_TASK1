@@ -1,63 +1,88 @@
 
-import random
+from flask import Flask, render_template, request, jsonify
 from datetime import datetime
+import random
 
-def chatbot_response(user_input):
-    message = user_input.lower().strip()
+app = Flask(__name__)
 
-    if any(word in message for word in ["hello", "hi", "hey"]):
+def get_response(user_message):
+    message = user_message.lower().strip()
+    words = set(message.replace("?", "").replace("!", "").replace(".", "").split())
+
+    if not message:
+        return "Please enter a message."
+
+    if words.intersection({"hello", "hi", "hey", "namaste"}):
         return random.choice([
-            "Hello! How can I help you?",
-            "Hi there! Nice to meet you.",
-            "Hey! What would you like to know?"
+            "Hello! Welcome to CodSoft Chatbot.",
+            "Hi there! How can I help you?",
+            "Hey! Nice to meet you."
         ])
 
     elif "your name" in message or "who are you" in message:
-        return "I am CodSoftBot, a simple rule-based chatbot."
+        return "I am CodSoft Chatbot, a rule-based conversational assistant."
 
     elif "how are you" in message:
-        return "I am doing great! Thanks for asking."
+        return "I am working perfectly! Thanks for asking. How can I help you?"
 
-    elif "time" in message:
-        return "The current time is " + datetime.now().strftime("%I:%M %p")
+    elif "help" in words:
+        return (
+            "You can ask me about my name, Python, AI, "
+            "the current time, today's date, or motivation."
+        )
 
-    elif "date" in message or "today" in message:
-        return "Today's date is " + datetime.now().strftime("%d-%m-%Y")
+    elif "python" in words:
+        return (
+            "Python is a popular programming language used in "
+            "AI, machine learning, automation, and web development."
+        )
 
-    elif "help" in message:
-        return "You can ask me about my name, time, date, or simply say hello."
+    elif "artificial intelligence" in message or "what is ai" in message:
+        return (
+            "Artificial Intelligence (AI) is the field of building "
+            "systems that perform tasks requiring human-like intelligence."
+        )
 
-    elif "thank" in message:
-        return "You're welcome! Happy to help."
+    elif "time" in words:
+        return "Current time: " + datetime.now().strftime("%I:%M:%S %p")
 
-    elif any(word in message for word in ["bye", "goodbye", "exit", "quit"]):
-        return "Goodbye! Have a wonderful day."
+    elif "date" in words or "today" in words:
+        return "Today's date: " + datetime.now().strftime("%d %B %Y")
+
+    elif "motivation" in words or "motivational" in words:
+        return "Keep learning and improving every day. Small steps lead to big achievements!"
+
+    elif words.intersection({"thanks", "thank", "thankyou"}):
+        return "You're welcome! I am happy to help."
+
+    elif words.intersection({"bye", "goodbye", "exit", "quit"}):
+        return "Goodbye! Keep learning and have a wonderful day."
 
     else:
-        return "Sorry, I don't understand that yet. Try asking for help."
+        return (
+            "I don't have a rule for that question yet. "
+            "Try asking about Python, AI, my name, time, date, or motivation."
+        )
 
 
-def main():
-    print("=" * 45)
-    print("       WELCOME TO CODSOFT CHATBOT")
-    print("=" * 45)
-    print("Type 'help' to see what I can do.")
-    print("Type 'bye' to end the conversation.\n")
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-    while True:
-        user_input = input("You: ").strip()
 
-        if not user_input:
-            print("Bot: Please enter a message.\n")
-            continue
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json(silent=True) or {}
+    message = data.get("message", "")
 
-        response = chatbot_response(user_input)
-        print("Bot:", response, "\n")
+    if not isinstance(message, str):
+        return jsonify({"reply": "Please send a valid text message."}), 400
 
-        if any(word in user_input.lower().split()
-               for word in ["bye", "goodbye", "exit", "quit"]):
-            break
+    if len(message) > 1000:
+        return jsonify({"reply": "Please keep your message under 1000 characters."}), 400
+
+    return jsonify({"reply": get_response(message)})
 
 
 if __name__ == "__main__":
-    main()
+    app.run(debug=True)
