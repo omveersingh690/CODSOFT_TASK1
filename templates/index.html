@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodSoft AI Chatbot</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #e0e7ff, #f5f3ff);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 80vh;
+            min-height: 480px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 10px 35px #00000018;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: #4338ca;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        header h1 { margin: 0 0 7px; font-size: 23px; }
+        header p { margin: 0; font-size: 13px; }
+
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 18px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 15px;
+            border-radius: 14px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.5;
+        }
+
+        .bot {
+            background: #eef2ff;
+            color: #1e1b4b;
+            margin-right: auto;
+        }
+
+        .user {
+            background: #4338ca;
+            color: white;
+            margin-left: auto;
+        }
+
+        form {
+            display: flex;
+            gap: 8px;
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 13px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 15px;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            background: #4338ca;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled { opacity: 0.6; cursor: wait; }
+
+        #status {
+            padding: 0 15px 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        @media (max-width: 480px) {
+            .chat-container { height: 90vh; }
+            button { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="chat-container">
+        <header>
+            <h1>CodSoft Chatbot</h1>
+            <p>Rule-Based Conversational Assistant</p>
+        </header>
+
+        <div id="messages" aria-live="polite">
+            <div class="message bot">
+                Hello! Welcome to CodSoft Chatbot. Type "help" to get started.
+            </div>
+        </div>
+
+        <div id="status" role="status"></div>
+
+        <form id="chat-form">
+            <input id="user-input" type="text"
+                   placeholder="Type your message..."
+                   maxlength="1000" autocomplete="off"
+                   aria-label="Your message" required>
+            <button id="send-button" type="submit">Send</button>
+        </form>
+    </main>
+
+    <script>
+        const form = document.getElementById("chat-form");
+        const input = document.getElementById("user-input");
+        const messages = document.getElementById("messages");
+        const status = document.getElementById("status");
+        const button = document.getElementById("send-button");
+
+        function addMessage(text, sender) {
+            const element = document.createElement("div");
+            element.className = `message ${sender}`;
+            element.textContent = text;
+            messages.appendChild(element);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const message = input.value.trim();
+            if (!message || button.disabled) return;
+
+            addMessage(message, "user");
+            input.value = "";
+            button.disabled = true;
+            status.textContent = "Chatbot is responding...";
+
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.reply || "Request failed.");
+                }
+
+                addMessage(data.reply, "bot");
+                status.textContent = "";
+            } catch (error) {
+                status.textContent = "Could not connect. Please try again.";
+            } finally {
+                button.disabled = false;
+                input.focus();
+            }
+        });
+    </script>
+</body>
+</html>
